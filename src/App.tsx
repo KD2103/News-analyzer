@@ -112,6 +112,7 @@ function App() {
   const [usage, setUsage] = useState<Usage | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [stats, setStats] = useState<{ total: number; oldest: number; newest: number } | null>(null);
 
   const handleAnalyze = useCallback(async () => {
     if (!apiKey) {
@@ -140,72 +141,149 @@ function App() {
     }
   }, [apiKey, hoursBack]);
 
-  const [stats, setStats] = useState<{ total: number; oldest: number; newest: number } | null>(null);
-
   return (
     <div className="container">
-      <h1>TreeNews History Analyzer</h1>
-      <div className="form">
-        <label>
-          OpenAI API Key:
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-..."
-            style={{ width: "100%" }}
-          />
-        </label>
-        <label>
-          Hours back:
-          <input
-            type="number"
-            min={0.5}
-            step={0.5}
-            value={hoursBack}
-            onChange={(e) => setHoursBack(parseFloat(e.target.value))}
-          />
-        </label>
-        <button onClick={handleAnalyze} disabled={loading}>
-          {loading ? "Analyzing..." : "Analyze"}
-        </button>
-      </div>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {summary && (
-        <div className="summary">
-          <h2>Significant News Summary</h2>
-          {/* prettier presentation: try to render bullet list */}
-          {(() => {
-            const lines = summary.split(/\n+/).map((l) => l.trim()).filter(Boolean);
-            const bullets = lines.filter((l) => l.startsWith("-") || l.startsWith("•"));
-            return bullets.length ? (
-              <ul className="bullet-list">
-                {bullets.map((line, idx) => (
-                  <li key={idx}>{line.replace(/^[-•]\s*/, "")}</li>
-                ))}
-              </ul>
-            ) : (
-              <pre>{summary}</pre>
-            );
-          })()}
-          {stats && (
-            <div className="stats">
-              <h3>Analysis Statistics</h3>
-              <ul>
-                <li>Total news analyzed: {stats.total}</li>
-                <li>
-                  Time range: {new Date(stats.oldest).toLocaleString()} – {" "}
-                  {new Date(stats.newest).toLocaleString()}
-                </li>
-                {usage && (
-                  <li>
-                    Tokens: {usage.total_tokens ?? "?"} (prompt {usage.prompt_tokens}, completion {usage.completion_tokens})
-                  </li>
-                )}
-              </ul>
+      {/* Header Section */}
+      <header className="header">
+        <h1 className="app-title">📈 TreeNews History Analyzer</h1>
+        <p className="app-subtitle">Анализируйте крипто-новости с помощью ИИ для принятия торговых решений</p>
+      </header>
+
+      {/* Form Section */}
+      <section className="form-section">
+        <div className="form">
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">
+                🔑 OpenAI API Key
+              </label>
+              <input
+                type="password"
+                className="form-input"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="sk-proj-..."
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">
+                ⏰ Часы назад
+              </label>
+              <input
+                type="number"
+                className="form-input"
+                min={0.5}
+                step={0.5}
+                value={hoursBack}
+                onChange={(e) => setHoursBack(parseFloat(e.target.value))}
+              />
+            </div>
+            <button 
+              className="analyze-button" 
+              onClick={handleAnalyze} 
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="loading-spinner"></div>
+                  Анализирую...
+                </>
+              ) : (
+                <>
+                  🔍 Анализировать
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Error Message */}
+      {error && (
+        <div className="error-message">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Results Section */}
+      {(summary || stats) && (
+        <section className="results-section">
+          {/* Summary Card */}
+          {summary && (
+            <div className="summary-card">
+              <div className="summary-header">
+                <span className="summary-icon">📰</span>
+                <h2 className="summary-title">Сводка значимых новостей</h2>
+              </div>
+              {(() => {
+                const lines = summary.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+                const bullets = lines.filter((l) => l.startsWith("-") || l.startsWith("•"));
+                return bullets.length ? (
+                  <ul className="news-list">
+                    {bullets.map((line, idx) => (
+                      <li key={idx} className="news-item">
+                        <div className="news-content">
+                          {line.replace(/^[-•]\s*/, "")}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <pre className="news-pre">{summary}</pre>
+                );
+              })()}
             </div>
           )}
-        </div>
+
+          {/* Stats Card */}
+          {stats && (
+            <div className="stats-card">
+              <div className="stats-header">
+                <span className="summary-icon">📊</span>
+                <h3 className="stats-title">Статистика анализа</h3>
+              </div>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <div className="stat-value">{stats.total}</div>
+                  <div className="stat-label">Новостей проанализировано</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">
+                    {new Date(stats.newest).toLocaleTimeString('ru-RU', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </div>
+                  <div className="stat-label">Самая свежая новость</div>
+                  <div className="stat-time">
+                    {new Date(stats.newest).toLocaleDateString('ru-RU')}
+                  </div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">
+                    {new Date(stats.oldest).toLocaleTimeString('ru-RU', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </div>
+                  <div className="stat-label">Самая старая новость</div>
+                  <div className="stat-time">
+                    {new Date(stats.oldest).toLocaleDateString('ru-RU')}
+                  </div>
+                </div>
+                {usage && (
+                  <div className="stat-item">
+                    <div className="stat-value">{usage.total_tokens ?? "?"}</div>
+                    <div className="stat-label">Токенов использовано</div>
+                    <div className="stat-time">
+                      prompt: {usage.prompt_tokens}, completion: {usage.completion_tokens}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
       )}
     </div>
   );
