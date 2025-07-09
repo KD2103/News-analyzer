@@ -40,3 +40,58 @@
 .read-the-docs {
   color: #888;
 }
+
+/* ------- custom styles for News Analyzer ----- */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  min-width: 220px;
+  text-align: left;
+}
+
+input[type="password"],
+input[type="number"] {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #1c1c1c;
+  color: #fff;
+}
+
+.summary {
+  text-align: left;
+  background: #1b1b1b;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+.bullet-list {
+  margin-left: 1.2rem;
+  line-height: 1.5;
+}
+
+.bullet-list li {
+  margin-bottom: 0.5rem;
+}
+
+.stats {
+  margin-top: 1.2rem;
+  font-size: 0.9rem;
+  color: #b0b0b0;
+}

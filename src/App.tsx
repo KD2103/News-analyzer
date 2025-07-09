@@ -174,7 +174,20 @@ function App() {
       {summary && (
         <div className="summary">
           <h2>Significant News Summary</h2>
-          <pre>{summary}</pre>
+          {/* prettier presentation: try to render bullet list */}
+          {(() => {
+            const lines = summary.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+            const bullets = lines.filter((l) => l.startsWith("-") || l.startsWith("•"));
+            return bullets.length ? (
+              <ul className="bullet-list">
+                {bullets.map((line, idx) => (
+                  <li key={idx}>{line.replace(/^[-•]\s*/, "")}</li>
+                ))}
+              </ul>
+            ) : (
+              <pre>{summary}</pre>
+            );
+          })()}
           {stats && (
             <div className="stats">
               <h3>Analysis Statistics</h3>
