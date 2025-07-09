@@ -69,20 +69,100 @@ function prepareMessagesForAI(messages: RawNewsItem[]): PreparedNewsItem[] {
   });
 }
 
+// Формируем блок текста без сжатия, в стиле Python функции
+function buildBlockText(items: PreparedNewsItem[]): string {
+  return items
+    .map((n) => {
+      const parts: string[] = [];
+      if (n.time) parts.push(n.time);
+      parts.push(`(${n.source})`);
+      parts.push(n.title || n.body);
+      if (n.url) parts.push(n.url);
+      return parts.join(" | ");
+    })
+    .join("\n");
+}
+
 async function summarizeWithOpenAI(
   apiKey: string,
   payload: PreparedNewsItem[],
-  model = "gpt-3.5-turbo"
+  model = "gpt-4o-mini"
 ): Promise<{ summary: string; usage?: Usage }> {
-  const systemPrompt =
-    "You are an expert crypto news summarizer. Provide concise bullet points of significant market-moving events.";
-  const userPrompt =
-    `Analyze the following JSON array of crypto news messages (max 1500, newest first). Highlight only SIGNIFICANT events that could affect crypto markets. Ignore noise, duplicates, unrelated topics. Output up to 10 bullet points. Each bullet: which tokens/companies, what happened, why important.`;
+  const systemPrompt = `
+<System_Prompt>
+<Persona>
+You are the senior crypto-macro analyst on a high-frequency trading desk.
+</Persona>
+
+<SIGNIFICANCE_CRITERIA>
+Treat an item as SIGNIFICANT only if it contains NEW information with high,
+near-term price impact on major tokens or the broader crypto market.
+
+• **Regulation/Governance**: SEC, CFTC, ESMA, ETF (19b-4, S-1, 40-F),
+  approvals/denials, lawsuits, subpoenas, sanctions.
+• **Exchange / Infrastructure**: new product launches, listings,
+  delistings, outages, hacks, acquisitions, bankruptcies.
+• **Funding / Corporate**: rounds ≥ $10 M, mergers, partnerships with
+  household-name firms (Visa, PayPal, Microsoft …), DAO governance votes
+  that pass and unlock funds.
+• **Revenue Models & Business Fundamentals**: revenue switch activation,
+  fee-sharing mechanisms launch, token buyback programs, profit distribution
+  to holders, transition from inflationary to deflationary tokenomics.
+• **On-chain / Tokenomics**: whale moves ≥ $100 M, token unlocks ≥ 1 %
+  of circulating supply, critical mainnet upgrades/forks.
+• **Macro & Politics**: surprises in Fed/ECB/Boj rate decisions (≥ 25 bps),
+  US CPI beats/misses, US payrolls shocks, sharp moves or trading halts in
+  S&P 500 / Nasdaq futures, election results if historically crypto-linked.
+• **Influencer Impact**:
+  - **High-Impact Individual Signals**: Trading calls from verified top-tier traders:
+    Birds of a Feather (@BirdrsTrades), 0xENAS (@0xENAS), Joshua Deuk (@JoshuaDeuk),
+    Hsaka (@HsakaTrades), Nacho (@NachoTrades), Rewkang (@Rewkang), Definalist (@definalist),
+    Bluntz Capital (@Bluntz_Capital), Mac (@MacnBTC), KSI Crypto (@ksicrypto),
+    Defi Squared (@DefiSquared), GCR (@GCR), Blknoiz (@blknoiz06),
+    Dark Crypto Lord (@DarkCryptoLord), Murad (@MustStopMurad)
+  - **Multiple Influencer Convergence**: When 2+ different influencers/traders
+    (not necessarily from the above list) independently shill or signal the same token
+    within the current batch. Format: "Multiple traders signal <TOKEN>: [list names]"
+  Key signal types to track:
+  - Explicit position entries/exits
+  - Clear directional calls  
+  - Timeframe specifications
+  
+Ignore commentary or opinion without fresh facts.
+</SIGNIFICANCE_CRITERIA>
+
+<OUTPUT_FORMAT>
+If ≥1 significant items exist, format each news item as follows:
+
+1. <TOKEN/Theme>: <concise one-sentence summary ≤ 25 words>
+   Link: <URL>
+
+2. <TOKEN/Theme>: <concise one-sentence summary ≤ 25 words>
+   Link: <URL>
+
+• Add a blank line between each news item for better readability
+• Remove exact or near-duplicate items (same token + same fact); keep the
+  most reputable source (e.g., Bloomberg > CoinTelegraph > random blog)
+• Max 15 items total
+• Number items sequentially (1, 2, 3, etc.)
+
+If none qualify: respond exactly NO_SIGNIFICANT_NEWS
+No explanations or extra text.
+</OUTPUT_FORMAT>
+
+<THINKING_PROCESS>
+Think step-by-step privately.  
+Build a set of (TOKEN, FACT) pairs to avoid duplicates before composing
+the final answer.  
+Output ONLY the formatted list described in <OUTPUT_FORMAT>.
+</THINKING_PROCESS>
+</System_Prompt>`;
+
+  const blockText = buildBlockText(payload);
 
   const messages = [
     { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-    { role: "user", content: JSON.stringify(payload) },
+    { role: "user", content: `<BATCH>\n${blockText}\n</BATCH>` },
   ];
 
   const resp = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -91,11 +171,26 @@ async function summarizeWithOpenAI(
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ model, messages, temperature: 0.3 }),
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0,
+      max_tokens: 1000,
+      top_p: 1,
+    }),
   });
 
   if (!resp.ok) {
-    throw new Error(`OpenAI error: ${resp.status}`);
+    // Попробуем извлечь подробности (может быть JSON или просто текст)
+    const rawText = await resp.text();
+    let detail = rawText;
+    try {
+      const errJson = JSON.parse(rawText);
+      detail = errJson?.error?.message ?? JSON.stringify(errJson);
+    } catch {
+      // rawText не является JSON
+    }
+    throw new Error(`OpenAI error ${resp.status}: ${detail}`);
   }
   const data = await resp.json();
 
