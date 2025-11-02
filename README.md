@@ -1,69 +1,169 @@
-# React + TypeScript + Vite
+# 🔍 Crypto News Analyzer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Веб-приложение для AI-анализа крипто-новостей из TreeNews с отслеживанием изменения цен.
 
-Currently, two official plugins are available:
+## ✨ Возможности
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📰 **AI-фильтрация** - только значимые новости (GPT-4o-mini)
+- 🎯 **Гибкий период** - выберите от 30 минут до 24+ часов
+- 💹 **Отслеживание цен** - процент изменения с момента новости
+- 🟢🔴 **Цветные индикаторы** - визуальная оценка движения
+- ⏱ **Время публикации** - "5h ago", "23h ago"
+- 📊 **Категории** - 📜 Regulation, 💱 Exchange, 🔥 Tokenomics...
+- 🔒 **Безопасность** - API ключ хранится только в браузере
 
-## Expanding the ESLint configuration
+## 🚀 Быстрый старт
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 1. Установка зависимостей
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd /Users/kd/Developer/GitHub/News-analyzer
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Запуск dev сервера
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+Откроется: **http://localhost:5173**
+
+### 3. Использование
+
+1. Введите ваш OpenAI API ключ (начинается с `sk-proj-...`)
+2. Выберите период анализа (по умолчанию 2 часа)
+3. Нажмите "🚀 Анализировать"
+4. Получите отфильтрованные новости с изменениями цен
+
+## 📦 Production Build
+
+```bash
+npm run build
+npm run preview
+```
+
+Build создастся в папке `dist/`
+
+## 🌐 Deploy
+
+### Vercel (рекомендуется):
+
+```bash
+npm install -g vercel
+vercel
+```
+
+### GitHub Pages:
+
+```bash
+npm run deploy
+```
+
+Сайт будет доступен на: `https://[username].github.io/News-analyzer`
+
+## 🎨 Что показывается
+
+### Формат новостей:
+
+```
+1. 📜 REGULATION | $BTC: SEC approves BlackRock spot ETF
+   [🟢 +2.5%] [⏱ 5h ago]
+   🔗 Источник
+
+2. 🐋 ON-CHAIN | $ETH: Whale moved $180M to Kraken
+   [🔴🔴 -3.2%] [⏱ 2h ago]
+   🔗 Источник
+```
+
+### Категории:
+
+- 📜 **REGULATION** - Регуляции, SEC, ETF
+- 💱 **EXCHANGE** - Листинги, биржи
+- 💰 **FUNDING** - Инвестиции ≥$10M
+- 🔥 **TOKENOMICS** - Байбэки, аирдропы
+- 🐋 **ON-CHAIN** - Движения китов
+- 📊 **MACRO** - Макроэкономика
+- 📢 **INFLUENCER** - Сигналы трейдеров
+- ⚠️ **SECURITY** - Взломы, уязвимости
+
+### Цветные индикаторы:
+
+```
+🟢🟢🚀 +15%   = Сильный рост
+🟢🟢 +7%      = Хороший рост
+🟢 +2%        = Рост
+⚪ 0%         = Без изменений
+🔴 -2%        = Падение
+🔴🔴 -7%      = Сильное падение
+🔴🔴🔻 -15%   = Обвал
+```
+
+## 🔧 Технологии
+
+- **React 19** + TypeScript
+- **Vite** - быстрый dev server
+- **TreeNews API** - источник новостей
+- **OpenAI GPT-4o-mini** - AI анализ
+- **Binance Futures API** - цены токенов
+
+## 🔒 Безопасность
+
+- API ключ хранится **только в браузере** (localStorage)
+- Запросы к OpenAI идут **напрямую из браузера**
+- Никаких серверов - полностью client-side
+- Можно использовать без регистрации
+
+## 📚 Структура проекта
+
+```
+News-analyzer/
+├── src/
+│   ├── App.tsx          # Основной компонент
+│   ├── App.css          # Стили
+│   ├── main.tsx         # Entry point
+│   └── index.css        # Глобальные стили
+├── public/              # Статические файлы
+├── dist/                # Production build
+└── package.json         # Зависимости
+```
+
+## 🎯 Примеры использования
+
+### Быстрая проверка (30 мин):
+
+```
+Period: 0.5 hours
+→ Получите самые свежие новости
+```
+
+### Стандартный анализ (2 часа):
+
+```
+Period: 2 hours
+→ Оптимальное окно для важных событий
+```
+
+### Глубокий анализ (24 часа):
+
+```
+Period: 24 hours
+→ Полный обзор суточной активности
+```
+
+## 💡 Советы
+
+- Используйте `gpt-4o-mini` для баланса скорости и качества
+- API ключ можно получить на https://platform.openai.com
+- Для частого использования лучше запустить локально
+- Ctrl+C для остановки dev сервера
+
+## 🔗 Ссылки
+
+- TreeNews: https://news.treeofalpha.com
+- OpenAI API: https://platform.openai.com
+- Документация Vite: https://vitejs.dev
+
+---
+
+**Готово к использованию! 🚀**
