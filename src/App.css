@@ -162,6 +162,60 @@ body {
   }
 }
 
+/* Presets */
+.presets-row {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.presets-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.preset-button {
+  background: var(--bg-dark);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.preset-button:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.preset-button.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.preset-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Error & No News Messages */
 .error-message,
 .no-news-message {
@@ -285,16 +339,35 @@ body {
   gap: 0.3rem;
 }
 
+.price-badge.clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.price-badge.clickable:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 .price-badge.positive {
   background: rgba(16, 185, 129, 0.15);
   color: var(--success);
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+.price-badge.clickable.positive:hover {
+  border-color: var(--success);
+}
+
 .price-badge.negative {
   background: rgba(239, 68, 68, 0.15);
   color: var(--danger);
   border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.price-badge.clickable.negative:hover {
+  border-color: var(--danger);
 }
 
 .time-badge {
@@ -317,6 +390,30 @@ body {
 .news-link:hover {
   color: #8b5cf6;
   transform: translateX(4px);
+}
+
+/* Chart */
+.chart-container {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--bg-dark);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.chart-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+.mini-chart-svg {
+  border-radius: 4px;
 }
 
 /* Footer */

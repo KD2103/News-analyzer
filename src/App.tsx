@@ -28,9 +28,19 @@ interface EnrichedHighlight {
   text: string;
   priceChange?: number;
   timeAgo?: string;
+  symbol?: string;
+  newsTimestamp?: number;
 }
 
-async function fetchTreeNews(limit = 1000): Promise<RawNewsItem[]> {
+interface ChartData {
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+async function fetchTreeNews(limit = 3500): Promise<RawNewsItem[]> {
   const resp = await fetch(
     `https://news.treeofalpha.com/api/news?limit=${limit}`
   );
@@ -256,6 +266,31 @@ async function getBinanceHistoricalPrice(
   }
 }
 
+async function getBinanceChartData(
+  symbol: string,
+  startTime: number,
+  endTime: number
+): Promise<ChartData[]> {
+  try {
+    // Use 15m interval for better visibility
+    const resp = await fetch(
+      `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=15m&startTime=${startTime}&endTime=${endTime}&limit=100`
+    );
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    
+    return data.map((candle: any) => ({
+      timestamp: candle[0],
+      open: parseFloat(candle[1]),
+      high: parseFloat(candle[2]),
+      low: parseFloat(candle[3]),
+      close: parseFloat(candle[4]),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 function extractToken(highlight: string): string | null {
   // Extract token from format: "1. 📜 REGULATION | $BTC: text"
   const match = highlight.match(/\$([A-Z0-9]+)/);
@@ -316,10 +351,12 @@ async function enrichHighlights(
 
     if (newsTimestamp) {
       result.timeAgo = formatTimeAgo(newsTimestamp);
+      result.newsTimestamp = newsTimestamp;
 
       // Try to get price change
       const binanceSymbol = normalizeTokenToBinance(token);
       if (binanceSymbol) {
+        result.symbol = binanceSymbol;
         try {
           const [historicalPrice, currentPrice] = await Promise.all([
             getBinanceHistoricalPrice(binanceSymbol, newsTimestamp),
@@ -353,9 +390,138 @@ function formatPriceEmoji(change: number): string {
   return "⚪";
 }
 
+// Mini Chart Component
+function MiniChart({
+  data,
+  newsTimestamp,
+}: {
+  data: ChartData[];
+  newsTimestamp: number;
+}) {
+  if (data.length === 0) return null;
+
+  const width = 300;
+  const height = 150;
+  const padding = { top: 10, right: 10, bottom: 20, left: 10 };
+
+  const prices = data.flatMap((d) => [d.high, d.low]);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const priceRange = maxPrice - minPrice;
+
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  // Calculate news marker position
+  const newsIndex = data.findIndex((d) => d.timestamp >= newsTimestamp);
+  const newsX =
+    newsIndex >= 0
+      ? padding.left + (newsIndex / (data.length - 1)) * chartWidth
+      : null;
+
+  return (
+    <svg width={width} height={height} className="mini-chart-svg">
+      <defs>
+        <linearGradient id="priceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#6366f1" stopOpacity="0.05" />
+        </linearGradient>
+      </defs>
+
+      {/* Price line */}
+      <polyline
+        points={data
+          .map((d, i) => {
+            const x = padding.left + (i / (data.length - 1)) * chartWidth;
+            const y =
+              padding.top +
+              chartHeight -
+              ((d.close - minPrice) / priceRange) * chartHeight;
+            return `${x},${y}`;
+          })
+          .join(" ")}
+        fill="none"
+        stroke="#6366f1"
+        strokeWidth="2"
+      />
+
+      {/* Fill area */}
+      <polygon
+        points={
+          data
+            .map((d, i) => {
+              const x = padding.left + (i / (data.length - 1)) * chartWidth;
+              const y =
+                padding.top +
+                chartHeight -
+                ((d.close - minPrice) / priceRange) * chartHeight;
+              return `${x},${y}`;
+            })
+            .join(" ") +
+          ` ${width - padding.right},${height - padding.bottom} ${padding.left},${height - padding.bottom}`
+        }
+        fill="url(#priceGradient)"
+      />
+
+      {/* News marker line */}
+      {newsX && (
+        <>
+          <line
+            x1={newsX}
+            y1={padding.top}
+            x2={newsX}
+            y2={height - padding.bottom}
+            stroke="#f59e0b"
+            strokeWidth="2"
+            strokeDasharray="4,2"
+          />
+          <circle cx={newsX} cy={padding.top + 5} r={4} fill="#f59e0b" />
+          <text
+            x={newsX}
+            y={padding.top - 2}
+            fontSize="10"
+            fill="#f59e0b"
+            textAnchor="middle"
+          >
+            📰
+          </text>
+        </>
+      )}
+
+      {/* Time labels */}
+      <text
+        x={padding.left}
+        y={height - 5}
+        fontSize="10"
+        fill="#94a3b8"
+        textAnchor="start"
+      >
+        {formatTimeAgo(data[0].timestamp)}
+      </text>
+      <text
+        x={width - padding.right}
+        y={height - 5}
+        fontSize="10"
+        fill="#94a3b8"
+        textAnchor="end"
+      >
+        Now
+      </text>
+    </svg>
+  );
+}
+
+// Common presets for different scenarios
+const TIME_PRESETS = [
+  { label: "🌅 Утро (12ч)", hours: 12 },
+  { label: "📅 Вчера (24ч)", hours: 24 },
+  { label: "🎯 Активный день (48ч)", hours: 48 },
+  { label: "🏖️ Выходные (72ч)", hours: 72 },
+];
+
 function App() {
   const [apiKey, setApiKey] = useState<string>("");
-  const [hoursBack, setHoursBack] = useState<number>(2);
+  const [hoursBack, setHoursBack] = useState<number>(12);
   const [summary, setSummary] = useState<string>("");
   const [enrichedNews, setEnrichedNews] = useState<EnrichedHighlight[]>([]);
   const [usage, setUsage] = useState<Usage | undefined>();
@@ -366,6 +532,32 @@ function App() {
     oldest: number;
     newest: number;
   } | null>(null);
+  const [activeChart, setActiveChart] = useState<number | null>(null);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+
+  const handleShowChart = useCallback(
+    async (idx: number, item: EnrichedHighlight) => {
+      if (activeChart === idx) {
+        setActiveChart(null);
+        setChartData([]);
+        return;
+      }
+
+      if (!item.symbol || !item.newsTimestamp) {
+        return;
+      }
+
+      setActiveChart(idx);
+      setChartData([]);
+
+      const endTime = Date.now();
+      const startTime = item.newsTimestamp;
+
+      const data = await getBinanceChartData(item.symbol, startTime, endTime);
+      setChartData(data);
+    },
+    [activeChart]
+  );
 
   const handleAnalyze = useCallback(async () => {
     if (!apiKey) {
@@ -389,6 +581,14 @@ function App() {
         setError(`Нет новостей за последние ${hoursBack}ч`);
         setLoading(false);
         return;
+      }
+
+      // Check coverage (warn if data might be incomplete)
+      const oldestFetched = raw.length > 0 ? Math.min(...raw.map(r => r.time ?? Date.now())) : Date.now();
+      const coverageHours = (Date.now() - oldestFetched) / (1000 * 60 * 60);
+      
+      if (coverageHours < hoursBack && filtered.length === raw.length) {
+        console.warn(`⚠️ Coverage: ${coverageHours.toFixed(1)}h < requested ${hoursBack}h. Increase limit.`);
       }
 
       const prepared = prepareNewsForAI(filtered);
@@ -432,7 +632,7 @@ function App() {
       <header className="header">
         <h1 className="app-title">🔍 Crypto News Analyzer</h1>
         <p className="app-subtitle">
-          Анализ TreeNews с AI-фильтрацией и отслеживанием цен
+          Утренний обзор значимых крипто-событий с AI-фильтрацией и графиками цен
         </p>
       </header>
 
@@ -476,6 +676,23 @@ function App() {
                 <>🚀 Анализировать</>
               )}
             </button>
+          </div>
+
+          {/* Quick Presets */}
+          <div className="presets-row">
+            <span className="presets-label">Быстрый выбор:</span>
+            <div className="preset-buttons">
+              {TIME_PRESETS.map((preset) => (
+                <button
+                  key={preset.hours}
+                  className={`preset-button ${hoursBack === preset.hours ? 'active' : ''}`}
+                  onClick={() => setHoursBack(preset.hours)}
+                  disabled={loading}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -538,16 +755,40 @@ function App() {
 
                     <div className="news-meta">
                       {item.priceChange !== undefined && (
-                        <span className={`price-badge ${item.priceChange >= 0 ? 'positive' : 'negative'}`}>
-                          {formatPriceEmoji(item.priceChange)}{" "}
-                          {item.priceChange > 0 ? "+" : ""}
-                          {item.priceChange.toFixed(1)}%
-                        </span>
+                        <>
+                          <button
+                            className={`price-badge clickable ${item.priceChange >= 0 ? 'positive' : 'negative'}`}
+                            onClick={() => handleShowChart(idx, item)}
+                            title="Показать график"
+                          >
+                            {formatPriceEmoji(item.priceChange)}{" "}
+                            {item.priceChange > 0 ? "+" : ""}
+                            {item.priceChange.toFixed(1)}%
+                            {item.symbol && " 📊"}
+                          </button>
+                        </>
                       )}
                       {item.timeAgo && (
                         <span className="time-badge">⏱ {item.timeAgo}</span>
                       )}
                     </div>
+
+                    {/* Price Chart */}
+                    {activeChart === idx && item.newsTimestamp && (
+                      <div className="chart-container">
+                        {chartData.length > 0 ? (
+                          <MiniChart
+                            data={chartData}
+                            newsTimestamp={item.newsTimestamp}
+                          />
+                        ) : (
+                          <div className="chart-loading">
+                            <div className="loading-spinner"></div>
+                            Загрузка графика...
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {link && (
                       <a
