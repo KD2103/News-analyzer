@@ -203,12 +203,50 @@ Report if ANY of these conditions are met:
   
 📢 **INFLUENCER** - High-conviction signals (ALWAYS report):
   • **TIER 1 - Industry Leaders** (HIGHEST IMPACT - their words move markets):
-    - **Vitalik Buterin** (@VitalikButerin) - Ethereum founder
-    - **CZ** (@cz_binance) - Binance founder  
-    - **Brian Armstrong** (@brian_armstrong) - Coinbase CEO
-    - **Michael Saylor** (@saylor) - MicroStrategy CEO
-    - **Do Kwon**, **Andre Cronje**, **Hayden Adams** - Protocol founders
-    - When these people praise/endorse a project → ALWAYS report
+    These people's endorsements cause immediate price action (often 50-200%+ pumps).
+    
+    **UNIVERSAL RULE for Tier 1 Leaders**: When ANY Tier 1 leader mentions/praises a project:
+      → Extract project name/token from context
+      → **MUST include exact quote/key phrase** from their message, not just "praises" or "endorses"
+      → Format: "[Name]: '[exact quote or key phrase]'"
+      → Example GOOD: "Vitalik: 'ZKsync doing underrated valuable work'"
+      → Example BAD: "Vitalik praises ZKsync" (too vague)
+      → Look for positive keywords: "excited", "valuable", "great work", "underrated", "impressed", "important", "doing good"
+    
+    **Tier 1 Leader List** (search for ALL variations):
+    
+    - **Vitalik Buterin** (@VitalikButerin, vitalik.eth, Vitalik, VitalikButerin) - Ethereum founder
+      → Historical: ZKsync praise → +100% pump
+    
+    - **CZ** (@cz_binance, CZ_Binance, CZ, cz_binance, Changpeng Zhao) - Binance founder
+      → Listings, delistings, major exchange decisions
+    
+    - **Brian Armstrong** (@brian_armstrong, brianarmstrong, Brian Armstrong) - Coinbase CEO
+      → Exchange policies, major partnerships, regulatory stance
+    
+    - **Michael Saylor** (@saylor, michael_saylor, Michael Saylor, MicroStrategy) - MicroStrategy CEO
+      → BTC purchases, corporate treasury strategies, crypto adoption
+    
+    - **Justin Sun** (@justinsuntron, Justin Sun, justinsun) - Tron founder, major whale
+      → Large transfers, exchange integrations, major moves
+    
+    - **Do Kwon** (@stablekwon, Do Kwon, dokwon) - Terra founder (high influence despite past)
+    
+    - **Andre Cronje** (@AndreCronjeTech, Andre Cronje, cronje) - Yearn Finance founder
+    
+    - **Hayden Adams** (@haydenzadams, Hayden Adams) - Uniswap founder
+    
+    - **Sam Bankman-Fried** (@SBF_FTX, SBF, sambf) - FTX founder (still influences market)
+    
+    - **Barry Silbert** (@barrysilbert, Barry Silbert) - Grayscale CEO
+    
+    - **Cameron & Tyler Winklevoss** (@winklevoss, winklevoss) - Gemini founders
+    
+    - **Erik Voorhees** (@ErikVoorhees, Erik Voorhees) - ShapeShift founder, crypto pioneer
+    
+    - **Anthony Pompliano** (@APompliano, Pomp) - Bitcoin advocate, major influencer
+    
+    → When ANY of these people praise/endorse/mention projects → ALWAYS include their exact words/quotes
     
   • **TIER 2 - Top Traders** (proven track record):
     - Hsaka, GCR, DefiSquared, Rewkang, Bluntz Capital, Mac, 0xENAS
@@ -350,8 +388,14 @@ Pattern:
 5. 🔥 TOKENOMICS | $BTC: MicroStrategy purchases 5,000 BTC for $250M, total holdings 152,000 BTC
    Link: https://microstrategy.com/...
 
-6. 📢 INFLUENCER | $ZK: Vitalik Buterin praises ZKsync work in Ethereum ecosystem, excited for developments
+6. 📢 INFLUENCER | $ZK: Vitalik: "ZKsync doing underrated valuable work in Ethereum ecosystem, excited to see this"
    Link: https://twitter.com/VitalikButerin/...
+
+6a. 📢 INFLUENCER | $BTC: Saylor: "MicroStrategy adding $500M Bitcoin to treasury, total holdings 200K BTC"
+   Link: https://twitter.com/saylor/...
+
+6b. 📢 INFLUENCER | $TRX: Justin Sun: "Tron integration with major exchange enables new trading pairs"
+   Link: https://twitter.com/justinsuntron/...
 
 7. 🔥 TOKENOMICS | $XYZ: Project announces $10M DAT buyback program starting December 1st
    Link: https://medium.com/...
@@ -392,17 +436,33 @@ Pattern:
 1. Extract all potentially significant items
 
 2. **MACRO & INSTITUTIONAL PRIORITY SCAN** (Do this FIRST before anything else):
+   - **Tier 1 Industry Leaders scan** (HIGHEST PRIORITY - 50-200%+ pump history):
+     * Search for ALL Tier 1 leaders in source/title/body (check ALL name variations):
+       - Vitalik/VitalikButerin/vitalik.eth, CZ/cz_binance, Brian Armstrong/brian_armstrong
+       - Michael Saylor/saylor, Justin Sun/justinsuntron, Do Kwon/stablekwon
+       - Andre Cronje/AndreCronjeTech, Hayden Adams/haydenzadams, SBF/SBF_FTX
+       - Barry Silbert/barrysilbert, Winklevoss/winklevoss, Erik Voorhees/ErikVoorhees, Pomp/APompliano
+     * Look for positive words: "underrated", "valuable", "excited", "great work", "doing good", "impressed"
+     * Extract project name/token mentioned from context
+     * Map common projects: ZKsync→$ZK, Arbitrum→$ARB, Optimism→$OP, Polygon→$MATIC, Tron→$TRX
+     * **CRITICAL**: Extract and include EXACT quote or key phrase from their message
+     * Format: "[Leader Name]: '[exact words]'" NOT just "[Name] praises"
+     * **AUTO-INCLUDE** as 📢 INFLUENCER with leader's exact quote included
+     * These are EXTREMELY actionable signals → historical evidence of 50-200%+ pumps
    - **Macro keywords**: Fed, Powell, CPI, inflation, tariff, US-China, circuit breaker, rate decision, NFP, unemployment, recession
    - **ETF keywords**: ETF, "spot ETF", "Bitcoin ETF", "Ethereum ETF", 19b-4, S-1, "BlackRock iShares", Grayscale, Fidelity, VanEck, ARK
    - **Corporate buyers**: MicroStrategy, Saylor, MSTR, Tesla, Block, Marathon, Bitmine, Strategy, Metaplanet
    - **Treasury operations**: "buys Bitcoin", "purchases BTC", "adds to treasury", "balance sheet", "DAT", "buyback program"
-   - **Industry leaders**: Vitalik, VitalikButerin, CZ, cz_binance, Brian Armstrong, brian_armstrong
+   - **Other industry leaders**: CZ, cz_binance, Brian Armstrong, brian_armstrong, Saylor
    - **Endorsements**: When industry leaders praise/mention projects → ALWAYS include
    - If found → automatically include (these are market-moving events)
-   - Tag: macro → 📊 MACRO, ETF → 📜 REGULATION, corporate → 🔥 TOKENOMICS, endorsements → 📢 INFLUENCER
-   - Ticker: macro/ETF use "CRYPTO MARKET" or main token ($BTC, $ETH), others use specific token
+   - Tag: Tier 1 leaders → 📢 INFLUENCER, macro → 📊 MACRO, ETF → 📜 REGULATION, corporate → 🔥 TOKENOMICS, other endorsements → 📢 INFLUENCER
+   - Ticker: Tier 1 leader mentions → extract token from project name/context, macro/ETF use "CRYPTO MARKET" or main token ($BTC, $ETH), others use specific token
 
 3. **NOISE FILTER** (Apply to non-macro items):
+   - **EXCEPTION**: Tier 1 Industry Leaders mentions → NEVER filter, always include (50-200%+ pump history)
+     * Tier 1 leaders: Vitalik, CZ, Brian Armstrong, Michael Saylor, Justin Sun, Do Kwon, Andre Cronje, Hayden Adams, SBF, Barry Silbert, Winklevoss, Erik Voorhees, Pomp
+     * Any mention/praise from these people → AUTO-INCLUDE regardless of other filters
    - Does it contain words: "may", "could", "might", "potentially", "expects", "predicts", "according to"? → SKIP
    - Is it about "sentiment", "fear", "greed", "mood", "feeling", "optimism", "pessimism"? → SKIP
    - Is it analyst opinion, price target, or forecast? → SKIP
@@ -486,13 +546,30 @@ Better to report 2 critical items than 10 items with 8 noise.
   - "DAT", "Dutch Auction", "tender offer", "buyback program"
   - Corporate announcements: "treasury operation", "reserve purchases"
 
-• **INDUSTRY LEADER ENDORSEMENTS** (MARKET-MOVING):
-  - "Vitalik", "VitalikButerin" + positive words: "excited", "valuable", "great work", "impressed"
-  - "CZ", "cz_binance" mentions specific projects
-  - "Brian Armstrong" endorses/praises
-  - "Saylor" talks about projects (beyond just BTC)
-  - Protocol founders praising other projects
-  - Key phrases: "excited to see", "doing great work", "underrated", "valuable contribution"
+• **TIER 1 INDUSTRY LEADER ENDORSEMENTS** (MARKET-MOVING - 50-200%+ pump history):
+  - **Universal Pattern** (applies to ALL Tier 1 leaders below):
+    * Search for leader name in ANY variation (username, real name, @handle)
+    * Look for positive keywords: "excited", "valuable", "great work", "impressed", "underrated", "important", "doing good", "doing well"
+    * Phrases: "doing underrated work", "valuable work", "excited to see", "doing great work", "underrated", "underrated and valuable"
+    * When leader mentions project name → extract token ticker (e.g., ZKsync → $ZK, Arbitrum → $ARB)
+    * **MUST include leader's exact quote/key phrase** in summary, not just "praises" or "endorses"
+    * Format summary as: "[Leader Name]: '[exact quote from message]'"
+    * **AUTO-INCLUDE**: Any Tier 1 leader praise = immediate actionable signal
+  
+  - **Tier 1 Leader Patterns** (search for ALL variations):
+    * **Vitalik**: "Vitalik", "VitalikButerin", "vitalik.eth", "@VitalikButerin"
+    * **CZ**: "CZ", "cz_binance", "@cz_binance", "Changpeng Zhao"
+    * **Brian Armstrong**: "Brian Armstrong", "brian_armstrong", "@brian_armstrong"
+    * **Michael Saylor**: "Saylor", "saylor", "@saylor", "Michael Saylor", "MicroStrategy"
+    * **Justin Sun**: "Justin Sun", "justinsuntron", "@justinsuntron", "justinsun"
+    * **Do Kwon**: "Do Kwon", "stablekwon", "@stablekwon", "dokwon"
+    * **Andre Cronje**: "Andre Cronje", "AndreCronjeTech", "@AndreCronjeTech", "cronje"
+    * **Hayden Adams**: "Hayden Adams", "haydenzadams", "@haydenzadams"
+    * **SBF**: "SBF", "SBF_FTX", "@SBF_FTX", "Sam Bankman-Fried", "sambf"
+    * **Barry Silbert**: "Barry Silbert", "barrysilbert", "@barrysilbert"
+    * **Winklevoss**: "Winklevoss", "winklevoss", "@winklevoss"
+    * **Erik Voorhees**: "Erik Voorhees", "ErikVoorhees", "@ErikVoorhees"
+    * **Pomp**: "Pomp", "APompliano", "@APompliano", "Anthony Pompliano"
 
 • Specific dollar amounts: "$200M", "$10M raised", "$100M moved", "$500M BTC purchase"
 • Official announcements: "SEC approves", "files", "announces"
