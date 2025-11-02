@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import "./App.css";
 
 interface RawNewsItem {
@@ -39,6 +39,9 @@ interface ChartData {
   low: number;
   close: number;
 }
+
+// Cache for CoinGecko token ID lookups
+const geckoIdCache = new Map<string, string | null>();
 
 async function fetchTreeNews(limit = 3500): Promise<RawNewsItem[]> {
   const resp = await fetch(
@@ -234,6 +237,93 @@ Format each item:
   };
 }
 
+// Auto-search for CoinGecko token ID by symbol
+async function findCoinGeckoId(symbol: string): Promise<string | null> {
+  const cleanSymbol = symbol.replace("USDT", "").toUpperCase();
+  
+  // Check cache first
+  if (geckoIdCache.has(cleanSymbol)) {
+    return geckoIdCache.get(cleanSymbol) || null;
+  }
+  
+  // Manual overrides for known tokens (fast path)
+  const manualMap: Record<string, string> = {
+    BTC: "bitcoin",
+    ETH: "ethereum",
+    GHOST: "ghostware",  // GhostwareOS
+    ZEC: "zcash",
+    SOL: "solana",
+    NEIRO: "neiro-on-eth",
+  };
+  
+  if (manualMap[cleanSymbol]) {
+    geckoIdCache.set(cleanSymbol, manualMap[cleanSymbol]);
+    return manualMap[cleanSymbol];
+  }
+  
+  // Auto-search via CoinGecko API
+  try {
+    const resp = await fetch(
+      `https://api.coingecko.com/api/v3/search?query=${cleanSymbol}`
+    );
+    if (!resp.ok) {
+      console.log(`CoinGecko search failed for ${cleanSymbol}: ${resp.status}`);
+      geckoIdCache.set(cleanSymbol, null);
+      return null;
+    }
+    
+    const data = await resp.json();
+    const coins = data.coins || [];
+    
+    console.log(`CoinGecko search results for ${cleanSymbol}:`, coins.slice(0, 3).map((c: any) => ({
+      symbol: c.symbol,
+      id: c.id,
+      name: c.name
+    })));
+    
+    // Find exact symbol match
+    const match = coins.find((coin: any) => 
+      coin.symbol?.toUpperCase() === cleanSymbol
+    );
+    
+    if (match && match.id) {
+      console.log(`✅ Auto-found CoinGecko ID for ${cleanSymbol}: ${match.id} (${match.name})`);
+      geckoIdCache.set(cleanSymbol, match.id);
+      return match.id;
+    }
+    
+    console.log(`❌ No exact match found for ${cleanSymbol}`);
+    geckoIdCache.set(cleanSymbol, null);
+    return null;
+  } catch (err) {
+    console.log(`CoinGecko search error for ${cleanSymbol}:`, err);
+    geckoIdCache.set(cleanSymbol, null);
+    return null;
+  }
+}
+
+async function getCoinGeckoPrice(
+  symbol: string
+): Promise<{ price: number | null; change24h: number | null }> {
+  try {
+    const geckoId = await findCoinGeckoId(symbol);
+    if (!geckoId) return { price: null, change24h: null };
+
+    const resp = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd&include_24hr_change=true`
+    );
+    if (!resp.ok) return { price: null, change24h: null };
+    const data = await resp.json();
+    
+    const price = data[geckoId]?.usd ?? null;
+    const change24h = data[geckoId]?.usd_24h_change ?? null;
+    
+    return { price, change24h };
+  } catch {
+    return { price: null, change24h: null };
+  }
+}
+
 async function getBinancePrice(symbol: string): Promise<number | null> {
   try {
     const resp = await fetch(
@@ -287,6 +377,54 @@ async function getBinanceChartData(
       close: parseFloat(candle[4]),
     }));
   } catch {
+    return [];
+  }
+}
+
+async function getCoinGeckoChartData(
+  token: string,
+  startTime: number,
+  endTime: number
+): Promise<ChartData[]> {
+  try {
+    console.log(`Getting CoinGecko chart for token: ${token}`);
+    const geckoId = await findCoinGeckoId(token);
+    if (!geckoId) {
+      console.log(`No CoinGecko ID found for ${token}`);
+      return [];
+    }
+    console.log(`Using CoinGecko ID: ${geckoId} for chart`);
+
+    // Calculate days difference
+    const now = Date.now();
+    const daysAgo = Math.ceil((now - startTime) / (1000 * 60 * 60 * 24));
+    const days = Math.min(daysAgo, 90); // CoinGecko limit
+
+    const resp = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${geckoId}/market_chart?vs_currency=usd&days=${days}`
+    );
+    
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    
+    // CoinGecko returns: { prices: [[timestamp, price], ...] }
+    const prices = data.prices || [];
+    
+    // Filter to our time range and convert to ChartData format
+    return prices
+      .filter((point: [number, number]) => {
+        const ts = point[0];
+        return ts >= startTime && ts <= endTime;
+      })
+      .map((point: [number, number]) => ({
+        timestamp: point[0],
+        open: point[1],
+        high: point[1],
+        low: point[1],
+        close: point[1],
+      }));
+  } catch (err) {
+    console.log(`CoinGecko chart error for ${token}:`, err);
     return [];
   }
 }
@@ -358,15 +496,23 @@ async function enrichHighlights(
       if (binanceSymbol) {
         result.symbol = binanceSymbol;
         try {
-          const [historicalPrice, currentPrice] = await Promise.all([
+          const [historicalPrice, currentPriceBinance] = await Promise.all([
             getBinanceHistoricalPrice(binanceSymbol, newsTimestamp),
             getBinancePrice(binanceSymbol),
           ]);
 
-          if (historicalPrice && currentPrice && historicalPrice > 0) {
+          if (historicalPrice && currentPriceBinance && historicalPrice > 0) {
+            // Binance success - calculate from news time
             const change =
-              ((currentPrice - historicalPrice) / historicalPrice) * 100;
+              ((currentPriceBinance - historicalPrice) / historicalPrice) * 100;
             result.priceChange = change;
+          } else {
+            // Fallback to CoinGecko 24h change (for tokens not on Binance like GHOST)
+            const geckoData = await getCoinGeckoPrice(token);
+            if (geckoData.change24h !== null) {
+              result.priceChange = geckoData.change24h;
+              console.log(`Using CoinGecko 24h change for ${token}: ${geckoData.change24h.toFixed(2)}%`);
+            }
           }
         } catch (err) {
           console.log(`Price fetch error for ${token}:`, err);
@@ -388,6 +534,68 @@ function formatPriceEmoji(change: number): string {
   if (change < -5) return "🔴🔴";
   if (change < 0) return "🔴";
   return "⚪";
+}
+
+// Price Chart Component with auto-loading
+function PriceChart({ symbol, newsTimestamp }: { symbol: string; newsTimestamp: number }) {
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [source, setSource] = useState<'binance' | 'coingecko' | null>(null);
+
+  useEffect(() => {
+    const loadChart = async () => {
+      setLoading(true);
+      const endTime = Date.now();
+      const startTime = newsTimestamp;
+      
+      // Try Binance first
+      let data = await getBinanceChartData(symbol, startTime, endTime);
+      
+      if (data.length > 0) {
+        setSource('binance');
+        setChartData(data);
+        setLoading(false);
+        return;
+      }
+      
+      // Fallback to CoinGecko
+      const token = symbol.replace('USDT', '');
+      data = await getCoinGeckoChartData(token, startTime, endTime);
+      
+      if (data.length > 0) {
+        setSource('coingecko');
+        console.log(`Using CoinGecko chart for ${token}`);
+      }
+      
+      setChartData(data);
+      setLoading(false);
+    };
+    loadChart();
+  }, [symbol, newsTimestamp]);
+
+  if (loading) {
+    return (
+      <div className="chart-container">
+        <div className="chart-loading">
+          <div className="loading-spinner"></div>
+          Загрузка графика...
+        </div>
+      </div>
+    );
+  }
+
+  if (chartData.length === 0) return null;
+
+  return (
+    <div className="chart-container">
+      <MiniChart data={chartData} newsTimestamp={newsTimestamp} />
+      {source && (
+        <div className="chart-source">
+          {source === 'binance' ? '📊 Binance' : '🦎 CoinGecko'}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Mini Chart Component
@@ -513,10 +721,10 @@ function MiniChart({
 
 // Common presets for different scenarios
 const TIME_PRESETS = [
-  { label: "🌅 Утро (12ч)", hours: 12 },
-  { label: "📅 Вчера (24ч)", hours: 24 },
-  { label: "🎯 Активный день (48ч)", hours: 48 },
-  { label: "🏖️ Выходные (72ч)", hours: 72 },
+  { label: "12H", hours: 12 },
+  { label: "1D", hours: 24 },
+  { label: "2D", hours: 48 },
+  { label: "3D", hours: 72 },
 ];
 
 function App() {
@@ -532,32 +740,6 @@ function App() {
     oldest: number;
     newest: number;
   } | null>(null);
-  const [activeChart, setActiveChart] = useState<number | null>(null);
-  const [chartData, setChartData] = useState<ChartData[]>([]);
-
-  const handleShowChart = useCallback(
-    async (idx: number, item: EnrichedHighlight) => {
-      if (activeChart === idx) {
-        setActiveChart(null);
-        setChartData([]);
-        return;
-      }
-
-      if (!item.symbol || !item.newsTimestamp) {
-        return;
-      }
-
-      setActiveChart(idx);
-      setChartData([]);
-
-      const endTime = Date.now();
-      const startTime = item.newsTimestamp;
-
-      const data = await getBinanceChartData(item.symbol, startTime, endTime);
-      setChartData(data);
-    },
-    [activeChart]
-  );
 
   const handleAnalyze = useCallback(async () => {
     if (!apiKey) {
@@ -737,57 +919,45 @@ function App() {
                 ?.replace("Link:", "")
                 .trim();
 
-              // Extract category emoji and token
-              const emojiMatch = mainText.match(
-                /^(\d+\.\s*)?([📜💱💰🔥🐋📊📢⚠️])/
-              );
-              const emoji = emojiMatch ? emojiMatch[2] : "📰";
+              // Extract token symbol (exclude dollar amounts like $600M, $10M)
+              const tokenMatch = mainText.match(/\$([A-Z]{2,10})(?![0-9MBK])/);
+              const tokenSymbol = tokenMatch ? tokenMatch[1] : null;
+              
+              // For chart: prefer token from text, then item.symbol, then default to BTC
+              const chartSymbol = tokenSymbol 
+                ? `${tokenSymbol}USDT`
+                : (item.symbol || "BTCUSDT");
 
               return (
                 <div key={idx} className="news-card">
                   <div className="news-card-header">
-                    <span className="news-emoji">{emoji}</span>
+                    {tokenSymbol ? (
+                      <span className="news-token">${tokenSymbol}</span>
+                    ) : (
+                      <span className="news-token-generic">CRYPTO MARKET</span>
+                    )}
                     <span className="news-number">#{idx + 1}</span>
                   </div>
 
                   <div className="news-card-body">
-                    <p className="news-text">{mainText.replace(/^\d+\.\s*/, "")}</p>
+                    <p className="news-text">{mainText.replace(/^\d+\.\s*/, "").replace(/\$[A-Z0-9]+:\s*/, "")}</p>
 
                     <div className="news-meta">
                       {item.priceChange !== undefined && (
-                        <>
-                          <button
-                            className={`price-badge clickable ${item.priceChange >= 0 ? 'positive' : 'negative'}`}
-                            onClick={() => handleShowChart(idx, item)}
-                            title="Показать график"
-                          >
-                            {formatPriceEmoji(item.priceChange)}{" "}
-                            {item.priceChange > 0 ? "+" : ""}
-                            {item.priceChange.toFixed(1)}%
-                            {item.symbol && " 📊"}
-                          </button>
-                        </>
+                        <span className={`price-badge ${item.priceChange >= 0 ? 'positive' : 'negative'}`}>
+                          {formatPriceEmoji(item.priceChange)}{" "}
+                          {item.priceChange > 0 ? "+" : ""}
+                          {item.priceChange.toFixed(1)}%
+                        </span>
                       )}
                       {item.timeAgo && (
                         <span className="time-badge">⏱ {item.timeAgo}</span>
                       )}
                     </div>
 
-                    {/* Price Chart */}
-                    {activeChart === idx && item.newsTimestamp && (
-                      <div className="chart-container">
-                        {chartData.length > 0 ? (
-                          <MiniChart
-                            data={chartData}
-                            newsTimestamp={item.newsTimestamp}
-                          />
-                        ) : (
-                          <div className="chart-loading">
-                            <div className="loading-spinner"></div>
-                            Загрузка графика...
-                          </div>
-                        )}
-                      </div>
+                    {/* Price Chart - always show for all news */}
+                    {item.newsTimestamp && chartSymbol && (
+                      <PriceChart symbol={chartSymbol} newsTimestamp={item.newsTimestamp} />
                     )}
 
                     {link && (
